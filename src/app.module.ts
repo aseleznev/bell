@@ -3,7 +3,9 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { AuthorModule } from './author/author.module';
 import configuration from './config/configuration';
+import { TypeGraphQLModule } from 'typegraphql-nestjs';
 
 @Module({
   imports: [
@@ -20,10 +22,17 @@ import configuration from './config/configuration';
         password: configService.get<string>('database.password'),
         database: configService.get<string>('database.name'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true
+        synchronize: true,
+        logging: true,
+        logger: 'debug'
       }),
       inject: [ConfigService]
-    })
+    }),
+    TypeGraphQLModule.forRoot({
+      emitSchemaFile: true,
+      validate: false
+    }),
+    AuthorModule
   ],
   controllers: [AppController],
   providers: [AppService]
