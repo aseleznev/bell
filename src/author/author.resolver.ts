@@ -4,7 +4,7 @@ import { AuthorService } from './author.service';
 import { Author } from './author.entity';
 
 @Injectable()
-@Resolver()
+@Resolver(of => Author)
 export class AuthorResolver {
   constructor(private readonly authorService: AuthorService) {}
 

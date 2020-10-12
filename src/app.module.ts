@@ -6,6 +6,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AuthorModule } from './author/author.module';
 import configuration from './config/configuration';
 import { TypeGraphQLModule } from 'typegraphql-nestjs';
+import { BookModule } from './book/book.module';
 
 @Module({
   imports: [
@@ -23,8 +24,7 @@ import { TypeGraphQLModule } from 'typegraphql-nestjs';
         database: configService.get<string>('database.name'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: true,
-        logging: true,
-        logger: 'debug'
+        logging: true
       }),
       inject: [ConfigService]
     }),
@@ -32,7 +32,8 @@ import { TypeGraphQLModule } from 'typegraphql-nestjs';
       emitSchemaFile: true,
       validate: false
     }),
-    AuthorModule
+    AuthorModule,
+    BookModule
   ],
   controllers: [AppController],
   providers: [AppService]

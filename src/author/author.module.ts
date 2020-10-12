@@ -6,6 +6,7 @@ import { AuthorResolver } from './author.resolver';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Author])],
-  providers: [AuthorService, AuthorResolver]
+  providers: [AuthorService, AuthorResolver],
+  exports: [AuthorService]
 })
 export class AuthorModule {}
