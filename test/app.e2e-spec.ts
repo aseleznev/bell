@@ -1,18 +1,13 @@
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Repository } from 'typeorm/index';
 import * as request from 'supertest';
 import { TypeGraphQLModule } from 'typegraphql-nestjs';
 import { AuthorModule } from '../src/author/author.module';
-import { Author } from '../src/author/author.entity';
-import { Book } from '../src/book/book.entity';
 import { BookModule } from '../src/book/book.module';
 
 describe('app e2e', () => {
   let app: INestApplication;
-  let authorRepository: Repository<Author>;
-  let bookRepository: Repository<Book>;
   beforeAll(async () => {
     const module = await Test.createTestingModule({
       imports: [
@@ -39,11 +34,6 @@ describe('app e2e', () => {
     app = module.createNestApplication();
     await app.init();
 
-    // authorRepository = module.get('AuthorRepository');
-    // await authorRepository.query(`DELETE FROM author;`);
-    //
-    // bookRepository = module.get('BookRepository');
-    // await bookRepository.query(`DELETE FROM book;`);
   });
   afterAll(async () => {
     await app.close();
