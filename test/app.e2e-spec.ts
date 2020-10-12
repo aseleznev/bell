@@ -1,24 +1,136 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { Repository } from 'typeorm/index';
 import * as request from 'supertest';
-import { AppModule } from './../src/app.module';
+import { TypeGraphQLModule } from 'typegraphql-nestjs';
+import { AuthorModule } from '../src/author/author.module';
+import { Author } from '../src/author/author.entity';
+import { Book } from '../src/book/book.entity';
+import { BookModule } from '../src/book/book.module';
 
-describe('AppController (e2e)', () => {
+describe('app e2e', () => {
   let app: INestApplication;
-
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
+  let authorRepository: Repository<Author>;
+  let bookRepository: Repository<Book>;
+  beforeAll(async () => {
+    const module = await Test.createTestingModule({
+      imports: [
+        AuthorModule,
+        BookModule,
+        TypeOrmModule.forRoot({
+          type: 'postgres',
+          host: 'localhost',
+          port: 5432,
+          username: 'alexanderseleznev',
+          password: 'archer2badly',
+          database: 'bell_e2e',
+          entities: ['./**/*.entity.ts'],
+          dropSchema: true,
+          synchronize: true,
+          logging: false
+        }),
+        TypeGraphQLModule.forRoot({
+          emitSchemaFile: true,
+          validate: false
+        })
+      ]
     }).compile();
-
-    app = moduleFixture.createNestApplication();
+    app = module.createNestApplication();
     await app.init();
+
+    // authorRepository = module.get('AuthorRepository');
+    // await authorRepository.query(`DELETE FROM author;`);
+    //
+    // bookRepository = module.get('BookRepository');
+    // await bookRepository.query(`DELETE FROM book;`);
+  });
+  afterAll(async () => {
+    await app.close();
   });
 
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
+  it('should add an author', async () => {
+    const { body } = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: `mutation {
+                  addAuthor(input:{authorId:1,name:"Vasil"})
+                  {
+                    authorId
+                    name
+                  }
+                }`
+      })
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(body.data.addAuthor).toEqual({ authorId: '1', name: 'Vasil' });
+  });
+
+  it('should add a book with author', async () => {
+    const { body } = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: `mutation {
+                  addBook(
+                    input: {
+                      bookId: 1
+                      name: "Book"
+                      pageCount: 77
+                      author: { authorId: 1 }
+                    }
+                  ) {
+                    bookId
+                    name
+                  }
+                }`
+      })
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(body.data.addBook).toEqual({ bookId: '1', name: 'Book' });
+  });
+
+  it('should return an array of authors', async () => {
+    const { body } = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: '{ Authors { authorId, name} }'
+      })
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(body.data.Authors).toEqual([{ authorId: '1', name: 'Vasil' }]);
+  });
+
+  it('should return an array of books without authors', async () => {
+    const { body } = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: '{ Books { bookId, name, pageCount} }'
+      })
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(body.data.Books).toEqual([{ bookId: '1', name: 'Book', pageCount: 77 }]);
+  });
+
+  it('should return an array of books with authors', async () => {
+    const { body } = await request(app.getHttpServer())
+      .post('/graphql')
+      .send({
+        query: '{ Books { bookId, name, pageCount, author { authorId, name } } }'
+      })
+      .set('Accept', 'application/json')
+      .expect('Content-Type', /json/)
+      .expect(200);
+
+    expect(body.data.Books).toEqual([
+      { bookId: '1', name: 'Book', pageCount: 77, author: { authorId: '1', name: 'Vasil' } }
+    ]);
   });
 });
